@@ -10,7 +10,7 @@ PC: `python -m exceleratear path-to-orglist`
 
 NB: In order to query the i7 database, excelerateAR expects an environment variable with the following schema:
 
-`I7DB_CRED="dbname=**dbname** user=**username** host=**hostname** password=**password**”`
+`I7DB_CRED="dbname=[dbname] user=[username] host=[hostname password=[password]”`
 (where values in [] are surrounded by single quotes)
 
 The username is collected via terminal input; this helps name the directory where files are stored and which name is printed at the bottom of each Excel sheet.
