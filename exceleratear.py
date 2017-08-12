@@ -8,8 +8,8 @@ a list of Idealist orgs (exact matches to names on the database),
 delimited by new lines.
 
 Note that in order to query Idealist v7's PostgreSQL database,
-psycopg2 expects credentials as a string with the following
-schema:
+psycopg2 expects credentials as an environment variable I7DB_CREDS
+with value as string with the following schema:
 
 "dbname='' user='' host='' password=''"
 
@@ -21,12 +21,7 @@ import datetime
 import json
 import os
 import re
-# import subprocess
 import sys
-# import time
-# import urllib.request
-
-# import pdfkit
 
 import psycopg2
 
@@ -207,14 +202,11 @@ def prepare_data(user_orgname, creds):
     cursor.close()
     conn.close()
 
-    # Convert the SQL results to a dictionary and a bunch of JSON
     i7_orgname = rows[0][5]
 
     # To track balance for each org
     org_balance = 0.0
 
-    # THIS BLOCK USES A DICTIONARY AND SPITS OUT RESULTS AS PRETTY JSON
-    # RETAINING FOR NOW, IN CASE THERE'S ANOTHER USE CASE USING JSON
     keys = ["index",
             "invoice_num",
             "invoice_link",
@@ -242,9 +234,6 @@ def prepare_data(user_orgname, creds):
     # Save the results dictionary to the global list of results
     app_data.append(results)
 
-    # SAVE THE RESULTING DATA AS A BUNCH OF JSON IN A LOG FILE
-    # results_file.write(json.dumps(results, indent=4))
-
     if make_excel(results, i7_orgname) == 0:
         return 0
     else:
@@ -261,18 +250,12 @@ def make_excel(data, i7_orgname):
         org_dir = r"{}\docs\{}".format(data_dir, i7_orgname)
         if not os.path.isdir(org_dir):
             os.mkdir(org_dir)
-        # org_docs = r"{}\docs".format(org_dir)
-        # if not os.path.isdir(org_docs):
-        #     os.mkdir(org_docs)
         filename = r"{}\AWB Invoices - {} - {}.xlsx".format(
             org_dir, i7_orgname, right_now.strftime('%b %d %Y'))
     else:
         org_dir = r"{}/docs/{}".format(data_dir, i7_orgname)
         if not os.path.isdir(org_dir):
             os.mkdir(org_dir)
-        # org_docs = r"{}/docs".format(org_dir)
-        # if not os.path.isdir(org_docs):
-        #     os.mkdir(org_docs)
         filename = r"{}/AWB Invoices {} {}.xlsx".format(
             org_dir, i7_orgname, right_now.strftime('%b %d %Y'))
 
@@ -294,7 +277,7 @@ def make_excel(data, i7_orgname):
     money = {"num_format": 44}
 
     # SET UP THE FORMATS TO BE USED
-    # I'm sure these can be consolidated at some point:
+    # flake8lint is throwing syntax errors on the below... hmmm...
     text_format = wb.add_format(
         dict(arial))
 
@@ -359,15 +342,11 @@ def make_excel(data, i7_orgname):
         col_widths.append(width)
         col += 1
 
-    # WRITE THE TABLE AND PDF DATA
+    # WRITE THE TABLE
     row += 1
     col = 0
 
     for item in data:
-        # pdfkit.from_url(item["invoice_link"],
-        #                "{}.pdf"
-        #                .format(item["invoice_num"]))
-        # print(item["invoice_link"])
         for key, value in item.items():
             # Don't do anything with the "invoice_link" value
             if key == "invoice_link" or key == "org_name":
