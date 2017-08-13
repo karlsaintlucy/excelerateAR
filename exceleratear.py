@@ -15,6 +15,12 @@ with value as string with the following schema:
 
 with credential values in between single quotes.
 
+ERROR CODES:
+-1  Memory error
+1   Command-line error
+2   SQL database connection error
+3   Problem with making Excel file
+
 """
 
 import datetime
@@ -31,6 +37,10 @@ import xlsxwriter
 
 # Instantiate global variables
 user_name = None
+user_email = None
+user_phone = None
+more_info = None
+
 results_file = None
 excluded_orgs_file = None
 included_orgs_file = None
@@ -39,6 +49,12 @@ docs_dir = None
 right_now = None
 app_data = []
 orgs_balances = []
+
+description_filter = r"\"(.+)\""
+
+folder_date_format = "%Y %m%d %H%M%S"
+invoice_date_format = "%b %d, %Y"
+excel_date_format = "%Y.%m.%d %I:%M:%S%p"
 
 keys = ["index",
         "invoice_num",
@@ -76,10 +92,6 @@ headers = ["Item No.",
 
 maxcol = 7
 
-more_info = "For more information, call (646) 786-6875, write "
-more_info += "accountsreceivable@idealist.org, or go to your "
-more_info += "organization's dashboard on Idealist."
-
 
 def main():
     """Run the higher-level tasks."""
@@ -87,8 +99,8 @@ def main():
         # Database credentials are stored in environment variable I7DB_CREDS
         connect_str = os.environ["I7DB_CREDS"]
     except:
-        print(colored("ERROR: " +
-                      "Need i7 database credentials exported as value " +
+        print(colored("ERROR: "
+                      "Need i7 database credentials exported as value "
                       "for I7DB_CREDS :(",
                       "red"))
         exit(1)
@@ -96,7 +108,7 @@ def main():
     try:
         source_file = sys.argv[1]
     except:
-        print(colored("ERROR: " +
+        print(colored("ERROR: "
                       "Need source file as command line argument :(",
                       "red"))
         exit(1)
@@ -110,6 +122,10 @@ def main():
 
     # Get the user name that will be printed in the footer of the Excel file
     global user_name
+    global user_email
+    global user_phone
+    global more_info
+
     global right_now
     global data_dir
     global docs_dir
@@ -126,7 +142,20 @@ def main():
         user_name = input(colored("Your name: ", "white"))
         if user_name:
             break
+    while True:
+        user_email = input(colored("Write back email: ", "white"))
+        if user_email:
+            break
+    while True:
+        user_phone = input(colored("Callback phone: ", "white"))
+        if user_phone:
+            break
     print()
+
+    # Create more_info string that will be printed in all the Excel files
+    more_info = "For more information, call {}, ".format(user_phone)
+    more_info += "write {}, or ".format(user_email)
+    more_info += "go to your organization's dashboard on Idealist."
 
     # Create a new subfolder for all the resulting files
     right_now = datetime.datetime.now()
@@ -135,28 +164,36 @@ def main():
     if not os.path.isdir(reports_dir):
         os.mkdir(reports_dir)
 
-    data_dir_string = "{} {}".format(
-        user_name, right_now.strftime("%Y %m%d %H%M%S"))
-    data_dir = os.path.join(reports_dir, data_dir_string)
-    os.mkdir(data_dir)
+    try:
+        data_dir_string = "{} {}".format(
+            user_name, right_now.strftime(folder_date_format))
+        data_dir = os.path.join(reports_dir, data_dir_string)
+        os.mkdir(data_dir)
 
-    docs_dir = os.path.join(data_dir, "docs")
-    os.mkdir(docs_dir)
+        docs_dir = os.path.join(data_dir, "docs")
+        os.mkdir(docs_dir)
 
-    logs_dir = os.path.join(data_dir, "logs")
-    os.mkdir(logs_dir)
+        logs_dir = os.path.join(data_dir, "logs")
+        os.mkdir(logs_dir)
+    except:
+        print(colored("ERROR: Couldn't make directories needed :(", "red"))
+        exit(-1)
 
-    results_path = os.path.join(logs_dir, "data.json")
-    results_file = open(results_path, "a")
+    try:
+        results_path = os.path.join(logs_dir, "data.json")
+        results_file = open(results_path, "a")
 
-    balances_path = os.path.join(logs_dir, "balances.json")
-    balances_file = open(balances_path, "a")
+        balances_path = os.path.join(logs_dir, "balances.json")
+        balances_file = open(balances_path, "a")
 
-    included_orgs_path = os.path.join(logs_dir, "included.txt")
-    included_orgs_file = open(included_orgs_path, "a")
+        included_orgs_path = os.path.join(logs_dir, "included.txt")
+        included_orgs_file = open(included_orgs_path, "a")
 
-    excluded_orgs_path = os.path.join(logs_dir, "excluded.txt")
-    excluded_orgs_file = open(excluded_orgs_path, "a")
+        excluded_orgs_path = os.path.join(logs_dir, "excluded.txt")
+        excluded_orgs_file = open(excluded_orgs_path, "a")
+    except:
+        print(colored("ERROR: Couldn't make log files :(", "red"))
+        exit(-1)
 
     print(colored("{:.<10s}".format("Running"), "yellow"))
     print()
@@ -169,7 +206,7 @@ def main():
 
         status = prepare_data(line, connect_str)
         if status == 1:
-            exit(1)
+            exit(2)
         elif status == 2:
             print(colored(
                 "...EXCLUDED: {} - No rows returned"
@@ -177,11 +214,7 @@ def main():
             excluded_orgs_file.write(line + "\n")
             excluded_count += 1
         elif status == 3:
-            print(colored(
-                "...EXCLUDED: {} - Couldn't make Excel file"
-                .format(line), "yellow"))
-            excluded_orgs_file.write(line + "\n")
-            excluded_count += 1
+            exit(3)
         else:
             print(colored("...OK: {}".format(line), "cyan"))
             included_orgs_file.write(line + "\n")
@@ -200,6 +233,11 @@ def prepare_data(user_orgname, creds):
     """Pull the data from the database and put it in data structures."""
     try:
         conn = psycopg2.connect(creds)
+    except:
+        print(colored("ERROR: Bad credentials :("), "red")
+        return 1
+
+    try:
         cursor = conn.cursor()
 
         # Get the data
@@ -230,8 +268,8 @@ def prepare_data(user_orgname, creds):
             ORDER BY i.number ASC;""", (user_orgname,))
         rows = cursor.fetchall()
     except:
-        print(colored("ERROR: \
-                       Something is wrong with your SQL, bro :(",
+        print(colored("ERROR: "
+                      "Something is wrong with your query, bro :(",
                       "red"))
         return 1
 
@@ -250,11 +288,15 @@ def prepare_data(user_orgname, creds):
 
     results = [dict(zip(keys, values)) for values in rows]
     for item in results:
-        item["description"] = re.search(
-            r"\"(.+)\"", item["description"]).group()[1:-1]
+        # Thanks, Antoine, for help with the below!
+        description_result = re.search(description_filter, item["description"])
+        description_group = description_result.group()
+        item["description"] = description_group[1:-1]
         item["amount_due"] = float(item["amount_due"])
-        item["posted_date"] = item["posted_date"].strftime('%b %m, %Y')
-        item["due_date"] = item["due_date"].strftime('%b %m, %Y')
+        item["posted_date"] = item["posted_date"].strftime(
+            invoice_date_format)
+        item["due_date"] = item["due_date"].strftime(
+            invoice_date_format)
         item["posted_by"] = item["posted_by"].title()
         org_balance += item["amount_due"]
 
@@ -277,13 +319,23 @@ def make_excel(data, i7_orgname):
 
     # CREATE THE EXCEL FILE
     org_dir = os.path.join(docs_dir, i7_orgname)
-    if not os.path.isdir(org_dir):
-        os.mkdir(org_dir)
+    try:
+        if not os.path.isdir(org_dir):
+            os.mkdir(org_dir)
+    except:
+        print(colored("ERROR: Couldn't make org_dir :(", "red"))
+        return 3
+
     filename_string = "AWB Invoices - {} - {}.xlsx".format(
         i7_orgname, right_now.strftime("%b %d %Y"))
     filename = os.path.join(org_dir, filename_string)
 
-    wb = xlsxwriter.Workbook(filename)
+    try:
+        wb = xlsxwriter.Workbook(filename)
+    except:
+        print(colored("ERROR: Couldn't create workbook :(", "red"))
+        return 3
+
     ws = wb.add_worksheet("Overdue Invoices")
 
     # SET UP THE FORMATS TO BE USED
@@ -318,90 +370,101 @@ def make_excel(data, i7_orgname):
     footer_format = wb.add_format(
         dict(arial, **center, **italic))
 
-    # Write the title (org name)
-    row = 0
-    col = 0
-    ws.merge_range(row, col, row, maxcol, i7_orgname, title_format)
+    try:
+        # Write the title (org name)
+        row = 0
+        col = 0
+        ws.merge_range(row, col, row, maxcol, i7_orgname, title_format)
 
-    # Write the subtitle
-    row += 1
-    col = 0
-    ws.merge_range(row, col, row, maxcol, "Overdue Idealist invoices as of {}"
-                   .format(right_now.strftime("%b %d, %Y")), subtitle_format)
+        # Write the subtitle
+        row += 1
+        col = 0
+        ws.merge_range(row, col, row, maxcol,
+                       "Overdue Idealist invoices as of {}"
+                       .format(
+                           right_now.strftime(invoice_date_format)),
+                       subtitle_format)
 
-    # Write the header row
-    row += 1
-    col = 0
-    col_widths = []
+        # Write the header row
+        row += 1
+        col = 0
+        col_widths = []
 
-    for header in headers:
-        width = len(str(header)) + 3
-        ws.set_column(col, col, width)
-        ws.write(row, col, header, header_format)
-        col_widths.append(width)
-        col += 1
-
-    # WRITE THE TABLE
-    row += 1
-    col = 0
-
-    for item in data:
-        for key, value in item.items():
-            # Don't do anything with the "invoice_link" value
-            if key == "invoice_link" or key == "org_name":
-                continue
-
-            # Reset the column width if data value is wider than column header
-            width = len(str(value)) + 3
-            if width > col_widths[col]:
-                col_widths[col] = width
-
-            # Print invoice number as a hyperlink to the invoice on Idealist
-            if key == "invoice_num":
-                ws.write_url(row, col, item["invoice_link"],
-                             url_format, str(item["invoice_num"]))
-
-            # Center the index, invoice, and
-            elif key == "index" or key == "days_overdue":
-                ws.write_number(row, col, value, center_format)
-
-            # Print the amount due as a number
-            elif key == "amount_due":
-                ws.write_number(row, col, value, money_format)
-                # total_due += value
-
-            # Print all other values as normal text
-            else:
-                ws.write(row, col, str(value), text_format)
+        for header in headers:
+            width = len(str(header)) + 3
+            ws.set_column(col, col, width)
+            ws.write(row, col, header, header_format)
+            col_widths.append(width)
             col += 1
+
+        # WRITE THE TABLE
         row += 1
         col = 0
 
-    # This is an ersatz block to automatically adjust the width
-    col = 0
-    for width in col_widths:
-        ws.set_column(col, col, width)
-        col += 1
+        for item in data:
+            for key, value in item.items():
+                # Don't do anything with the "invoice_link" value
+                if key == "invoice_link" or key == "org_name":
+                    continue
 
-    # write the total
-    ws.write(row, 6, "Total:", bold_format)
-    ws.write_formula(row, 7, "=SUM(H4:H{})".format(row), total_format)
+                # Reset the column width if data value is wider than col header
+                width = len(str(value)) + 3
+                if width > col_widths[col]:
+                    col_widths[col] = width
 
-    # Add the footer
-    row += 2
-    col = 0
-    ws.merge_range(row, col, row, maxcol, "Report run by {} at {} ET.".format(
-        user_name, right_now.strftime("%Y.%m.%d %I:%M:%S%p")), footer_format)
-    ws.merge_range(row + 1, col, row + 1, maxcol, more_info, footer_format)
+                # Print invoice number as a hyperlink to the invoice
+                if key == "invoice_num":
+                    ws.write_url(row, col, item["invoice_link"],
+                                 url_format, str(item["invoice_num"]))
 
-    # Hide the gridlines for display
-    ws.hide_gridlines(2)
+                # Center the index, invoice, and
+                elif key == "index" or key == "days_overdue":
+                    ws.write_number(row, col, value, center_format)
 
-    # Close the workbook
-    wb.close()
+                # Print the amount due as a number
+                elif key == "amount_due":
+                    ws.write_number(row, col, value, money_format)
+                    # total_due += value
 
-    # All is good!
-    return 0
+                # Print all other values as normal text
+                else:
+                    ws.write(row, col, str(value), text_format)
+                col += 1
+            row += 1
+            col = 0
+
+        # This is an ersatz block to automatically adjust the width
+        col = 0
+        for width in col_widths:
+            ws.set_column(col, col, width)
+            col += 1
+
+        # write the total
+        ws.write(row, 6, "Total:", bold_format)
+        sum_function = "=SUM(H4:H{})".format(row)
+        ws.write_formula(row, 7, sum_function, total_format)
+
+        # Add the footer
+        row += 2
+        col = 0
+        excel_time = right_now.strftime(excel_date_format)
+        ws.merge_range(row, col, row, maxcol,
+                       "Report run by {} at {} ET.".format(
+                           user_name, excel_time),
+                       footer_format)
+        ws.merge_range(row + 1, col, row + 1, maxcol, more_info, footer_format)
+
+        # Hide the gridlines for display
+        ws.hide_gridlines(2)
+
+        # Close the workbook
+        wb.close()
+
+        # All is good!
+        return 0
+    except:
+        print(colored("ERROR: Problem writing in Excel file :(", "red"))
+        return 3
 
 if __name__ == "__main__":
     main()
