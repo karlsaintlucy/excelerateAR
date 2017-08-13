@@ -32,13 +32,53 @@ import xlsxwriter
 # Instantiate global variables
 user_name = None
 results_file = None
-excluded_orgs = None
-included_orgs = None
+excluded_orgs_file = None
+included_orgs_file = None
 data_dir = None
+docs_dir = None
 right_now = None
-platform = None
 app_data = []
 orgs_balances = []
+
+keys = ["index",
+        "invoice_num",
+        "invoice_link",
+        "description",
+        "posted_by",
+        "org_name",
+        "posted_date",
+        "due_date",
+        "days_overdue",
+        "amount_due"]
+
+arial = {"font_name": "Arial Narrow"}
+center = {"align": "center"}
+big = {"font_size": 24}
+medium = {"font_size": 18}
+bold = {"bold": True}
+italic = {"italic": True}
+underline = {"underline": 1}
+blue = {"font_color": "blue"}
+gray = {"font_color": "gray"}
+white = {"font_color": "white"}
+black_bg = {"bg_color": "black"}
+gray_bg = {"bg_color": "gray"}
+money = {"num_format": 44}
+
+headers = ["Item No.",
+           "Invoice No.",
+           "Posting Title",
+           "Posted By",
+           "Posted Date",
+           "Due Date",
+           "Days Overdue",
+           "Amount Due"]
+
+maxcol = 7
+
+more_info = "For more information, call (646) 786-6875, write "
+more_info += "accountsreceivable@idealist.org, or go to your "
+more_info += "organization's dashboard on Idealist."
 
 
 def main():
@@ -61,11 +101,8 @@ def main():
                       "red"))
         exit(1)
 
-    # Get the user platform so directories can be created correctly
-    global platform
-    platform = os.name
-
     # Fun li'l header
+    platform = sys.platform
     os.system('cls' if platform == 'nt' else 'clear')
     print(colored("{:=^79s}".format(
         "excelerateAR for Idealist, v0.1 by Karl Johnson"),
@@ -75,9 +112,10 @@ def main():
     global user_name
     global right_now
     global data_dir
-    global result_file
-    global excluded_orgs
-    global included_orgs
+    global docs_dir
+    global results_file
+    global excluded_orgs_file
+    global included_orgs_file
 
     global app_data
     global orgs_balances
@@ -85,7 +123,7 @@ def main():
     print()
 
     while True:
-        user_name = input(colored("Your name: ", 'white'))
+        user_name = input(colored("Your name: ", "white"))
         if user_name:
             break
     print()
@@ -93,31 +131,34 @@ def main():
     # Create a new subfolder for all the resulting files
     right_now = datetime.datetime.now()
 
-    if not os.path.isdir("reports"):
-        os.mkdir("reports")
+    reports_dir = "reports"
+    if not os.path.isdir(reports_dir):
+        os.mkdir(reports_dir)
 
-    if platform == 'nt':
-        data_dir = r"reports\{} {}".format(
-            right_now.strftime("%Y %m%d %H%M%S"), user_name)
-        os.mkdir(data_dir)
-        os.mkdir(r"{}\docs".format(data_dir))
-        os.mkdir(r"{}\logs".format(data_dir))
-        results_file = open(r"{}\logs\data.json".format(data_dir), "a")
-        balances_file = open(r"{}\logs\balances.json".format(data_dir), "a")
-        included_orgs = open(r"{}\logs\included.txt".format(data_dir), "a")
-        excluded_orgs = open(r"{}\logs\excluded.txt".format(data_dir), "a")
-    else:
-        data_dir = r"reports/{} {}".format(
-            right_now.strftime("%Y %m%d %H%M%S"), user_name)
-        os.mkdir(data_dir)
-        os.mkdir(r"{}/docs".format(data_dir))
-        os.mkdir(r"{}/logs".format(data_dir))
-        results_file = open(r"{}/logs/data.json".format(data_dir), "a")
-        balances_file = open(r"{}/logs/balances.json".format(data_dir), "a")
-        included_orgs = open(r"{}/logs/included.txt".format(data_dir), "a")
-        excluded_orgs = open(r"{}/logs/excluded.txt".format(data_dir), "a")
+    data_dir_string = "{} {}".format(
+        user_name, right_now.strftime("%Y %m%d %H%M%S"))
+    data_dir = os.path.join(reports_dir, data_dir_string)
+    os.mkdir(data_dir)
 
-    print(colored("{:.<10s}".format("Running"), 'yellow'))
+    docs_dir = os.path.join(data_dir, "docs")
+    os.mkdir(docs_dir)
+
+    logs_dir = os.path.join(data_dir, "logs")
+    os.mkdir(logs_dir)
+
+    results_path = os.path.join(logs_dir, "data.json")
+    results_file = open(results_path, "a")
+
+    balances_path = os.path.join(logs_dir, "balances.json")
+    balances_file = open(balances_path, "a")
+
+    included_orgs_path = os.path.join(logs_dir, "included.txt")
+    included_orgs_file = open(included_orgs_path, "a")
+
+    excluded_orgs_path = os.path.join(logs_dir, "excluded.txt")
+    excluded_orgs_file = open(excluded_orgs_path, "a")
+
+    print(colored("{:.<10s}".format("Running"), "yellow"))
     print()
 
     excluded_count = 0
@@ -132,18 +173,18 @@ def main():
         elif status == 2:
             print(colored(
                 "...EXCLUDED: {} - No rows returned"
-                .format(line), 'yellow'))
-            excluded_orgs.write(line + "\n")
+                .format(line), "yellow"))
+            excluded_orgs_file.write(line + "\n")
             excluded_count += 1
         elif status == 3:
             print(colored(
                 "...EXCLUDED: {} - Couldn't make Excel file"
-                .format(line), 'yellow'))
-            excluded_orgs.write(line + "\n")
+                .format(line), "yellow"))
+            excluded_orgs_file.write(line + "\n")
             excluded_count += 1
         else:
-            print(colored("...OK: {}".format(line), 'cyan'))
-            included_orgs.write(line + "\n")
+            print(colored("...OK: {}".format(line), "cyan"))
+            included_orgs_file.write(line + "\n")
             completed_count += 1
 
     results_file.write(json.dumps(app_data, indent=4))
@@ -151,7 +192,7 @@ def main():
 
     print()
     print(colored("Process completed with {} completions and {} exclusions."
-                  .format(completed_count, excluded_count), 'green'))
+                  .format(completed_count, excluded_count), "green"))
     print()
 
 
@@ -207,17 +248,6 @@ def prepare_data(user_orgname, creds):
     # To track balance for each org
     org_balance = 0.0
 
-    keys = ["index",
-            "invoice_num",
-            "invoice_link",
-            "description",
-            "posted_by",
-            "org_name",
-            "posted_date",
-            "due_date",
-            "days_overdue",
-            "amount_due"]
-
     results = [dict(zip(keys, values)) for values in rows]
     for item in results:
         item["description"] = re.search(
@@ -246,35 +276,15 @@ def make_excel(data, i7_orgname):
     i7_orgname = re.sub("\:+", "-", i7_orgname)
 
     # CREATE THE EXCEL FILE
-    if platform == 'nt':
-        org_dir = r"{}\docs\{}".format(data_dir, i7_orgname)
-        if not os.path.isdir(org_dir):
-            os.mkdir(org_dir)
-        filename = r"{}\AWB Invoices - {} - {}.xlsx".format(
-            org_dir, i7_orgname, right_now.strftime('%b %d %Y'))
-    else:
-        org_dir = r"{}/docs/{}".format(data_dir, i7_orgname)
-        if not os.path.isdir(org_dir):
-            os.mkdir(org_dir)
-        filename = r"{}/AWB Invoices {} {}.xlsx".format(
-            org_dir, i7_orgname, right_now.strftime('%b %d %Y'))
+    org_dir = os.path.join(docs_dir, i7_orgname)
+    if not os.path.isdir(org_dir):
+        os.mkdir(org_dir)
+    filename_string = "AWB Invoices - {} - {}.xlsx".format(
+        i7_orgname, right_now.strftime("%b %d %Y"))
+    filename = os.path.join(org_dir, filename_string)
 
     wb = xlsxwriter.Workbook(filename)
     ws = wb.add_worksheet("Overdue Invoices")
-
-    arial = {"font_name": "Arial Narrow"}
-    center = {"align": "center"}
-    big = {"font_size": 24}
-    medium = {"font_size": 18}
-    bold = {"bold": True}
-    italic = {"italic": True}
-    underline = {"underline": 1}
-    blue = {"font_color": "blue"}
-    gray = {"font_color": "gray"}
-    white = {"font_color": "white"}
-    black_bg = {"bg_color": "black"}
-    gray_bg = {"bg_color": "gray"}
-    money = {"num_format": 44}
 
     # SET UP THE FORMATS TO BE USED
     # flake8lint is throwing syntax errors on the below... hmmm...
@@ -308,8 +318,6 @@ def make_excel(data, i7_orgname):
     footer_format = wb.add_format(
         dict(arial, **center, **italic))
 
-    maxcol = 7
-
     # Write the title (org name)
     row = 0
     col = 0
@@ -325,15 +333,6 @@ def make_excel(data, i7_orgname):
     row += 1
     col = 0
     col_widths = []
-
-    headers = ["Item No.",
-               "Invoice No.",
-               "Posting Title",
-               "Posted By",
-               "Posted Date",
-               "Due Date",
-               "Days Overdue",
-               "Amount Due"]
 
     for header in headers:
         width = len(str(header)) + 3
@@ -393,11 +392,7 @@ def make_excel(data, i7_orgname):
     col = 0
     ws.merge_range(row, col, row, maxcol, "Report run by {} at {} ET.".format(
         user_name, right_now.strftime("%Y.%m.%d %I:%M:%S%p")), footer_format)
-    ws.merge_range(row + 1, col, row + 1, maxcol,
-                   "For more information, call (646) 786-6875, write " +
-                   "accountsreceivable@idealist.org, or go to your "
-                   "organization's dashboard on Idealist.",
-                   footer_format)
+    ws.merge_range(row + 1, col, row + 1, maxcol, more_info, footer_format)
 
     # Hide the gridlines for display
     ws.hide_gridlines(2)
