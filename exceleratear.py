@@ -32,38 +32,47 @@ import xlsxwriter
 
 def main():
     """Execute the application."""
-    orglist_path = sys.argv[1]
-    orglist = open(orglist_path)
-    creds = get_db_credentials()
-    prefs = get_preferences()
+    options = {}
 
+    # Snag the orglist, database creds, and preferences, and save to options
+    orglist_path = sys.argv[1]
+    options["orglist"] = open(orglist_path)
+    options["creds"] = get_db_credentials()
+    options["prefs"] = get_preferences()
+
+    # Pretty header that shows the name of the app :)
     show_interface_header()
 
-    user_info = get_user_info()
-    right_now = get_right_now()
-    dirs = make_dirs(right_now, user_info, prefs)
-    logs = make_log_files(dirs["logs_dir"])
+    # Get the client info (for folder naming and writing in the Excel files)
+    options["user_info"] = get_user_info()
 
-    conn, cursor = connect_to_db(creds)
-    query_file = open("query.sql")
-    query = query_file.read()
+    # Build file structure
+    options["right_now"] = get_right_now()
+    options["dirs"] = make_dirs(options["right_now"],
+                                options["user_info"],
+                                options["prefs"])
+    options["logs"] = make_log_files(options["dirs"]["logs_dir"])
 
+    # Connect to database and add pointers to options dict
+    options["conn"], options["cursor"] = connect_to_db(options["creds"])
+
+    # Pretty little 'Running...' indicator :)
     show_running()
 
-    counts = {"included": 0, "excluded": 0}
-    app_data = step_through_orgs(orglist,
-                                 cursor,
-                                 query,
-                                 prefs,
-                                 logs,
-                                 counts,
-                                 user_info,
-                                 right_now,
-                                 dirs)
+    # Snag the external SQL query and load into options dict
+    query_file = open("query.sql")
+    options["query"] = query_file.read()
 
-    disconnect_from_db(conn, cursor)
-    make_app_data_log(app_data, logs)
-    print_app_result(counts["included"], counts["excluded"])
+    # Instantiate the counters and run through the orgs
+    counts = {"included": 0, "excluded": 0}
+    app_data = step_through_orgs(options, counts)
+
+    # Disconnect, make logs, show the results
+    disconnect_from_db(options["conn"], options["cursor"])
+    make_app_data_log(app_data, options["logs"])
+
+    # Display how many orgs were included and excluded. That's it!
+    print_app_result(counts)
 
 
 def get_db_credentials():
@@ -159,20 +168,6 @@ def make_log_files(logs_dir):
     return logs
 
 
-def show_running():
-    """Show 'Running...'."""
-    print(colored("{:.<10s}".format("Running"), "yellow"))
-    print()
-
-
-def print_app_result(included, excluded):
-    """Print how many orgs were included and excluded."""
-    print()
-    print(colored("Process completed with {} inclusions and {} exclusions."
-                  .format(included, excluded), "green"))
-    print()
-
-
 def connect_to_db(creds):
     """Open connection with i7 database."""
     conn = psycopg2.connect(creds)
@@ -180,17 +175,25 @@ def connect_to_db(creds):
     return conn, cursor
 
 
-def step_through_orgs(orglist,
-                      cursor,
-                      query,
-                      prefs,
-                      logs,
-                      counts,
-                      user_info,
-                      right_now,
-                      dirs):
+def show_running():
+    """Show 'Running...'."""
+    print(colored("{:.<10s}".format("Running"), "yellow"))
+    print()
+
+
+def step_through_orgs(options, counts):
     """Step through each org, making Excel file and logging results."""
     app_data = []
+
+    orglist = options["orglist"]
+    cursor = options["cursor"]
+    query = options["query"]
+    prefs = options["prefs"]
+    logs = options["logs"]
+    user_info = options["user_info"]
+    right_now = options["right_now"]
+    dirs = options["dirs"]
+
     for orgname in orglist:
         orgname = orgname.rstrip()
         results, counts = get_org_invoices(cursor,
@@ -259,7 +262,6 @@ def sanitize_results(results, prefs):
         item["due_date"] = item["due_date"].strftime(
             invoice_date_format)
         item["posted_by"] = item["posted_by"].title()
-        # org_balance += item["amount_due"]
 
     return results
 
@@ -268,18 +270,6 @@ def log_results(results, app_data):
     """Append each org's db results to a list of results."""
     app_data.append(results)
     return app_data
-
-
-def disconnect_from_db(conn, cursor):
-    """Close connection with i7 database."""
-    cursor.close()
-    conn.close()
-
-
-def make_app_data_log(app_data, logs):
-    """Take the list of result dicts and log them as JSON in data.json."""
-    results_file = logs["results_file"]
-    results_file.write(json.dumps(app_data, indent=4))
 
 
 def make_excel(orgname, results, user_info, prefs, right_now, docs_dir):
@@ -303,7 +293,7 @@ def make_excel(orgname, results, user_info, prefs, right_now, docs_dir):
 
     headers = prefs["headers"]
 
-    # There's got to be a way to simply this block:
+    # There's got to be a way to simplify this block:
     text_format = wb.add_format(prefs["text_format"])
     title_format = wb.add_format(prefs["title_format"])
     subtitle_format = wb.add_format(prefs["subtitle_format"])
@@ -408,6 +398,26 @@ def make_excel(orgname, results, user_info, prefs, right_now, docs_dir):
 
     # Close the workbook
     wb.close()
+
+
+def disconnect_from_db(conn, cursor):
+    """Close connection with i7 database."""
+    cursor.close()
+    conn.close()
+
+
+def make_app_data_log(app_data, logs):
+    """Take the list of result dicts and log them as JSON in data.json."""
+    results_file = logs["results_file"]
+    results_file.write(json.dumps(app_data, indent=4))
+
+
+def print_app_result(counts):
+    """Print how many orgs were included and excluded."""
+    print()
+    print(colored("Process completed with {} inclusions and {} exclusions."
+                  .format(counts["included"], counts["excluded"]), "green"))
+    print()
 
 
 if __name__ == "__main__":
