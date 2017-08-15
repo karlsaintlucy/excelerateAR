@@ -153,9 +153,6 @@ def make_log_files(logs_dir):
     results_path = os.path.join(logs_dir, "data.json")
     results_file = open(results_path, "a")
 
-    balances_path = os.path.join(logs_dir, "balances.json")
-    balances_file = open(balances_path, "a")
-
     included_orgs_path = os.path.join(logs_dir, "included.txt")
     included_orgs_file = open(included_orgs_path, "a")
 
@@ -164,7 +161,6 @@ def make_log_files(logs_dir):
 
     logs = {
         "results_file": results_file,
-        "balances_file": balances_file,
         "included_orgs_file": included_orgs_file,
         "excluded_orgs_file": excluded_orgs_file}
     return logs
@@ -216,16 +212,14 @@ def get_org_invoices(options, orgname, counts):
 
     if rows:
         included_orgs_file.write(orgname + "\n")
-        print(colored("...OK: {}".format(orgname), "cyan"))
         counts["included"] += 1
-        included_orgs_file.write(orgname + "\n")
+        print(colored("...OK: {}".format(orgname), "cyan"))
         results = [dict(zip(keys, values)) for values in rows]
         results = sanitize_results(results, options["prefs"])
     else:
-        excluded_orgs_file.write(orgname)
-        print(colored("...EXCLUDED: {}".format(orgname), "yellow"))
+        excluded_orgs_file.write(orgname + "\n")
         counts["excluded"] += 1
-        excluded_orgs_file.write(orgname)
+        print(colored("...EXCLUDED: {}".format(orgname), "yellow"))
         results = None
 
     return results, counts
