@@ -175,6 +175,7 @@ def connect_to_db(creds):
 
 def show_running():
     """Show 'Running...'."""
+    print()
     print(colored("{:.<10s}".format("Running"), "yellow"))
     print()
 
