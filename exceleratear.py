@@ -90,7 +90,7 @@ def get_preferences():
 def show_interface_header():
     """Clear the screen and show the interface header."""
     platform = sys.platform
-    os.system('cls' if platform == 'nt' else 'clear')
+    os.system('cls' if platform == 'nt' or 'win32' else 'clear')
     print(colored("{:=^79s}".format(
         "excelerateAR for Idealist, v0.1 by Karl Johnson"),
         "white"))
@@ -125,7 +125,7 @@ def make_dirs(options):
     folder_date_format = prefs["folder_date_format"]
 
     data_dir_string = "{} {}".format(
-        user_name, right_now.strftime(folder_date_format))
+        right_now.strftime(folder_date_format), user_name)
     data_dir = os.path.join(reports_dir, data_dir_string)
     os.mkdir(data_dir)
 
