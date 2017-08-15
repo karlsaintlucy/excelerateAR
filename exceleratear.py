@@ -348,6 +348,10 @@ def make_excel(orgname, results, user_info, prefs, right_now, docs_dir):
     col = 0
 
     for item in results:
+        # Skip invoices with "None" as invoice number
+        if item["invoice_num"] is None:
+            continue
+
         for key, value in item.items():
             # Don't do anything with the "invoice_link" value
             if key == "invoice_link" or key == "org_name":
