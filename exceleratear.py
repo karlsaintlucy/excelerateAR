@@ -26,19 +26,36 @@ from helpers import *
 
 
 def main():
-    """Execute the application."""
-    options = {}
+    """Execute the core functionality."""
+    counts = {"included": 0, "excluded": 0}
 
-    # Snag the orglist, database creds, and preferences, and save to options
-    orglist_path = sys.argv[1]
-    options["orglist"] = open(orglist_path)
-    options["creds"] = get_db_credentials()
-    options["prefs"] = get_preferences()
-
-    # Pretty header that shows the name of the app :)
+    # Get app-specific data
+    options = get_options()
     show_interface_header()
 
-    # Get the client info (for folder naming and writing in the Excel files)
+    # Get user-specific data and build file structures.
+    options = prepare_files(options)
+    show_running()
+
+    # Run through the orgs, log, and make Excel sheets.
+    app_data, counts = step_through_orgs(options, counts)
+    end_app(options, app_data)
+
+    # Display how many orgs were included and excluded. That's it!
+    print_app_result(counts)
+
+
+def get_options():
+    """Execute the application."""
+    return {
+        "orglist": open(sys.argv[1]),
+        "creds": get_db_credentials(),
+        "prefs": get_preferences()
+    }
+
+
+def prepare_files(options):
+    """Get user data and prepare file structure."""
     options["user_info"] = get_user_info()
 
     # Build file structure
@@ -49,23 +66,17 @@ def main():
     # Connect to database and add pointers to options dict
     options["conn"], options["cursor"] = connect_to_db(options["creds"])
 
-    # Pretty little 'Running...' indicator :)
-    show_running()
-
     # Snag the external SQL query and load into options dict
     query_file = open("query.sql")
     options["query"] = query_file.read()
 
-    # Instantiate the counters and run through the orgs
-    counts = {"included": 0, "excluded": 0}
-    app_data = step_through_orgs(options, counts)
+    return options
 
-    # Disconnect, make logs, show the results
+
+def end_app(options, app_data):
+    """Disconnect from database and make logs."""
     disconnect_from_db(options["conn"], options["cursor"])
     make_app_data_log(app_data, options["logs"])
-
-    # Display how many orgs were included and excluded. That's it!
-    print_app_result(counts)
 
 
 if __name__ == "__main__":

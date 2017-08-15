@@ -110,7 +110,6 @@ def show_running():
 def step_through_orgs(options, counts):
     """Step through each org, making Excel file and logging results."""
     app_data = []
-
     orglist = options["orglist"]
 
     for orgname in orglist:
@@ -126,7 +125,7 @@ def step_through_orgs(options, counts):
                    options["right_now"],
                    options["dirs"]["docs_dir"])
 
-    return log_results(results, app_data)
+    return log_results(results, app_data), counts
 
 
 def get_org_invoices(options, orgname, counts):
