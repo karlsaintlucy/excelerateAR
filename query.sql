@@ -10,9 +10,9 @@ SELECT row_number() over(ORDER BY i.number ASC),
         (i.created + INTERVAL '45 days')))/86400)::int AS days_overdue,
     li.unit_price AS amount_due
     FROM invoices AS i
-    INNER JOIN users AS u ON u.id = i.creator_id
-    INNER JOIN orgs AS o ON o.id = i.org_id
-    INNER JOIN line_items AS li ON li.invoice_id = i.id
+    LEFT JOIN users AS u ON u.id = i.creator_id
+    LEFT JOIN orgs AS o ON o.id = i.org_id
+    LEFT JOIN line_items AS li ON li.invoice_id = i.id
     WHERE o.name = %s
     AND i.payment_settled = FALSE
     AND ((li.item_type = 'JOB') OR (li.item_type = 'INTERNSHIP'))
