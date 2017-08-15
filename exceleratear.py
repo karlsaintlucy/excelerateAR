@@ -15,12 +15,6 @@ with value as string with the following schema:
 
 with credential values in between single quotes.
 
-ERROR CODES:
--1  Memory error
-1   Command-line error
-2   SQL database connection error
-3   Problem with making Excel file
-
 """
 
 import datetime
