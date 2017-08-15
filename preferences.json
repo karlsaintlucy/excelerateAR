@@ -1,0 +1,75 @@
+{
+    "excel_date_format": "%Y.%m.%d %I:%M:%S%p",
+    "folder_date_format": "%Y %m%d %H%M%S",
+    "invoice_date_format": "%b %d, %Y",
+    "keys": ["index",
+        "invoice_num",
+        "invoice_link",
+        "description",
+        "posted_by",
+        "org_name",
+        "posted_date",
+        "due_date",
+        "days_overdue",
+        "amount_due"],
+    "headers": ["Item No.",
+        "Invoice No.",
+        "Posting Title",
+        "Posted By",
+        "Posted Date",
+        "Due Date",
+        "Days Overdue",
+        "Amount Due"],
+    "text_format": {
+        "font_name": "Arial Narrow"
+    },
+    "title_format": {
+        "font_name": "Arial Narrow",
+        "align": "center",
+        "font_size": 24,
+        "bold": true,
+        "font_color": "white",
+        "bg_color": "black"
+    },
+    "subtitle_format": {
+        "font_name": "Arial Narrow",
+        "align": "center",
+        "font_size": 18,
+        "font_color": "white",
+        "bg_color": "black"
+    },
+    "header_format": {
+        "font_name": "Arial Narrow",
+        "italic": true,
+        "font_color": "white",
+        "bg_color": "gray"
+    },
+    "bold_format": {
+        "font_name": "Arial Narrow",
+        "bold": true
+    },
+    "center_format": {
+        "font_name": "Arial Narrow",
+        "align": "center"
+    },
+    "url_format": {
+        "font_name": "Arial Narrow",
+        "align": "center",
+        "underline": 1,
+        "font_color": "blue"
+    },
+    "money_format": {
+        "font_name": "Arial Narrow",
+        "num_format": 44
+    },
+    "total_format": {
+        "font_name": "Arial Narrow",
+        "bold": true,
+        "num_format": 44
+    },
+    "footer_format": {
+        "font_name": "Arial Narrow",
+        "align": "center",
+        "italic": true
+    }
+}
