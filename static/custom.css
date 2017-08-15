@@ -1,0 +1,19 @@
+.vertical-center {
+  min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
+  min-height: 100vh; /* These two lines are counted as one :-)       */
+
+  display: flex;
+  align-items: center;
+}
+
+#name, #phone, #email {
+    width: 75%;
+}
+
+#orglist, input[type="submit"] {
+    width: 100%;
+}
+
+textarea {
+    resize: none;
+}
