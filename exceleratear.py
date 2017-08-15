@@ -48,9 +48,7 @@ def main():
 
     # Build file structure
     options["right_now"] = get_right_now()
-    options["dirs"] = make_dirs(options["right_now"],
-                                options["user_info"],
-                                options["prefs"])
+    options["dirs"] = make_dirs(options)
     options["logs"] = make_log_files(options["dirs"]["logs_dir"])
 
     # Connect to database and add pointers to options dict
@@ -119,8 +117,12 @@ def get_right_now():
     return right_now
 
 
-def make_dirs(right_now, user_info, prefs):
+def make_dirs(options):
     """Create the folder structure to house the resulting documents."""
+    right_now = options["right_now"]
+    user_info = options["user_info"]
+    prefs = options["prefs"]
+
     reports_dir = "reports"
     if not os.path.isdir(reports_dir):
         os.mkdir(reports_dir)
@@ -186,43 +188,31 @@ def step_through_orgs(options, counts):
     app_data = []
 
     orglist = options["orglist"]
-    cursor = options["cursor"]
-    query = options["query"]
-    prefs = options["prefs"]
-    logs = options["logs"]
-    user_info = options["user_info"]
-    right_now = options["right_now"]
-    dirs = options["dirs"]
 
     for orgname in orglist:
         orgname = orgname.rstrip()
-        results, counts = get_org_invoices(cursor,
-                                           query,
-                                           orgname,
-                                           prefs,
-                                           logs,
-                                           counts)
+        results, counts = get_org_invoices(options, orgname, counts)
         if not results:
             continue
 
         app_data = log_results(results, app_data)
         make_excel(orgname,
                    results,
-                   user_info,
-                   prefs,
-                   right_now,
-                   dirs["docs_dir"])
+                   options["user_info"],
+                   options["prefs"],
+                   options["right_now"],
+                   options["dirs"]["docs_dir"])
 
     return app_data
 
 
-def get_org_invoices(cursor, query, orgname, prefs, logs, counts):
+def get_org_invoices(options, orgname, counts):
     """Read each orgname and run the queries."""
-    included_orgs_file = logs["included_orgs_file"]
-    excluded_orgs_file = logs["excluded_orgs_file"]
-    keys = prefs["keys"]
+    included_orgs_file = options["logs"]["included_orgs_file"]
+    excluded_orgs_file = options["logs"]["excluded_orgs_file"]
+    keys = options["prefs"]["keys"]
 
-    rows = run_query(cursor, query, orgname)
+    rows = run_query(options["cursor"], options["query"], orgname)
 
     if rows:
         included_orgs_file.write(orgname + "\n")
@@ -230,7 +220,7 @@ def get_org_invoices(cursor, query, orgname, prefs, logs, counts):
         counts["included"] += 1
         included_orgs_file.write(orgname + "\n")
         results = [dict(zip(keys, values)) for values in rows]
-        results = sanitize_results(results, prefs)
+        results = sanitize_results(results, options["prefs"])
     else:
         excluded_orgs_file.write(orgname)
         print(colored("...EXCLUDED: {}".format(orgname), "yellow"))
