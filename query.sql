@@ -1,4 +1,4 @@
-SELECT row_number() over(ORDER BY i.number ASC),
+SELECT ROW_NUMBER() OVER(ORDER BY i.number ASC),
     i.number AS invoice_num,
     'https://www.idealist.org/invoices/' || i.id AS invoice_link,
     li.description AS description,
@@ -19,7 +19,7 @@ SELECT row_number() over(ORDER BY i.number ASC),
     AND EXTRACT(EPOCH FROM(SELECT(NOW() -
         (i.created + INTERVAL '45 days')))/86400)::int > 0
     --  https://stackoverflow.com/questions/3420982/opposite-of-inner-join
-    AND NOT EXISTS(SELECT NULL
+    AND NOT EXISTS(SELECT *
         FROM payment_parts AS pp
         WHERE li.id = pp.line_item_id)
     ORDER BY i.number ASC;

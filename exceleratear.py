@@ -49,7 +49,6 @@ def main():
 
     show_interface_running()
 
-    # Fix this -- it's opaque.
     app_data, counts = excelerate_orgs(options, counts)
     disconnect_from_db(options["conn"], options["cursor"])
     make_app_data_log(app_data, options["logs"])
