@@ -1,0 +1,54 @@
+{
+    "text": {
+        "font_name": "Arial Narrow"
+    },
+    "title": {
+        "font_name": "Arial Narrow",
+        "align": "center",
+        "font_size": 24,
+        "bold": true,
+        "font_color": "white",
+        "bg_color": "black"
+    },
+    "subtitle": {
+        "font_name": "Arial Narrow",
+        "align": "center",
+        "font_size": 18,
+        "font_color": "white",
+        "bg_color": "black"
+    },
+    "header": {
+        "font_name": "Arial Narrow",
+        "italic": true,
+        "font_color": "white",
+        "bg_color": "gray"
+    },
+    "bold": {
+        "font_name": "Arial Narrow",
+        "bold": true
+    },
+    "center": {
+        "font_name": "Arial Narrow",
+        "align": "center"
+    },
+    "url": {
+        "font_name": "Arial Narrow",
+        "align": "center",
+        "underline": 1,
+        "font_color": "blue"
+    },
+    "money": {
+        "font_name": "Arial Narrow",
+        "num_format": 44
+    },
+    "total": {
+        "font_name": "Arial Narrow",
+        "bold": true,
+        "num_format": 44
+    },
+    "footer": {
+        "font_name": "Arial Narrow",
+        "align": "center",
+        "italic": true
+    }
+}

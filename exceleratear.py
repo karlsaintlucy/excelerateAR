@@ -18,65 +18,43 @@ with credential values in between single quotes.
 """
 
 import datetime
+import os
 import sys
 
-from helpers import *
-
-# from sqlalchemy import create_engine
+from helpers import (
+    get_preferences, show_interface_header, get_user_info,
+    make_dirs, make_log_files, connect_to_db,
+    show_interface_running, excelerate_orgs, disconnect_from_db,
+    make_app_data_log, print_app_result
+)
 
 
 def main():
     """Execute the core functionality."""
     counts = {"included": 0, "excluded": 0}
 
-    # Get app-specific data
-    options = get_options()
+    options = {"orglist": open(sys.argv[1]),
+               "creds": os.environ.get("I7DB_CREDS"),
+               "prefs": get_preferences()}
+
     show_interface_header()
 
-    # Get user-specific data and build file structures.
-    options = prepare_files(options)
-    show_running()
-
-    # Run through the orgs, log, and make Excel sheets.
-    app_data, counts = step_through_orgs(options, counts)
-    end_app(options, app_data)
-
-    # Display how many orgs were included and excluded. That's it!
-    print_app_result(counts)
-
-
-def get_options():
-    """Execute the application."""
-    return {
-        "orglist": open(sys.argv[1]),
-        "creds": get_db_credentials(),
-        "prefs": get_preferences()
-    }
-
-
-def prepare_files(options):
-    """Get user data and prepare file structure."""
     options["user_info"] = get_user_info()
-
-    # Build file structure
     options["right_now"] = datetime.datetime.now()
     options["dirs"] = make_dirs(options)
     options["logs"] = make_log_files(options["dirs"]["logs_dir"])
-
-    # Connect to database and add pointers to options dict
     options["conn"], options["cursor"] = connect_to_db(options["creds"])
-
-    # Snag the external SQL query and load into options dict
     query_file = open("query.sql")
     options["query"] = query_file.read()
 
-    return options
+    show_interface_running()
 
-
-def end_app(options, app_data):
-    """Disconnect from database and make logs."""
+    # Fix this -- it's opaque.
+    app_data, counts = excelerate_orgs(options, counts)
     disconnect_from_db(options["conn"], options["cursor"])
     make_app_data_log(app_data, options["logs"])
+
+    print_app_result(counts)
 
 
 if __name__ == "__main__":

@@ -1,18 +1,14 @@
+"""Helpers for excelerateAR for Idealist."""
+
 import json
 import os
 import re
 import sys
 
 import psycopg2
-
-from make_excel import make_excel
-
 from termcolor import colored
 
-
-def get_db_credentials():
-    """Get the i7 database credentials."""
-    return os.environ["I7DB_CREDS"]
+from make_excel import make_excel
 
 
 def get_preferences():
@@ -25,10 +21,9 @@ def get_preferences():
 def show_interface_header():
     """Clear the screen and show the interface header."""
     platform = sys.platform
-    os.system('cls' if platform == 'nt' or 'win32' else 'clear')
-    print(colored("{:=^79s}".format(
-        "excelerateAR for Idealist, v0.1 by Karl Johnson"),
-        "white"))
+    os.system('cls' if platform == ('nt' or 'win32') else 'clear')
+    print(colored("{:=^79s}".format("excelerateAR for Idealist, "
+                                    "v0.1 by Karl Johnson"), "white"))
 
 
 def get_user_info():
@@ -36,14 +31,13 @@ def get_user_info():
     user_name = input(colored("Your name: ", "white"))
     user_email = input(colored("Write back email: ", "white"))
     user_phone = input(colored("Callback phone: ", "white"))
-    more_info = "For more information, call {}, ".format(user_phone)
-    more_info += "write {}, or ".format(user_email)
-    more_info += "go to your organization's dashboard on Idealist."
-    return {
-        "name": user_name,
-        "email": user_email,
-        "phone": user_phone,
-        "more_info": more_info}
+    more_info = ("For more information, call {}, write {}, or go to your "
+                 "organization's dashboard on Idealist."
+                 .format(user_phone, user_email))
+    return {"name": user_name,
+            "email": user_email,
+            "phone": user_phone,
+            "more_info": more_info}
 
 
 def make_dirs(options):
@@ -70,10 +64,9 @@ def make_dirs(options):
     logs_dir = os.path.join(data_dir, "logs")
     os.mkdir(logs_dir)
 
-    return {
-        "data_dir": data_dir,
-        "docs_dir": docs_dir,
-        "logs_dir": logs_dir}
+    return {"data_dir": data_dir,
+            "docs_dir": docs_dir,
+            "logs_dir": logs_dir}
 
 
 def make_log_files(logs_dir):
@@ -87,10 +80,9 @@ def make_log_files(logs_dir):
     excluded_orgs_path = os.path.join(logs_dir, "excluded.txt")
     excluded_orgs_file = open(excluded_orgs_path, "a")
 
-    return {
-        "results_file": results_file,
-        "included_orgs_file": included_orgs_file,
-        "excluded_orgs_file": excluded_orgs_file}
+    return {"results_file": results_file,
+            "included_orgs_file": included_orgs_file,
+            "excluded_orgs_file": excluded_orgs_file}
 
 
 def connect_to_db(creds):
@@ -100,14 +92,14 @@ def connect_to_db(creds):
     return conn, cursor
 
 
-def show_running():
+def show_interface_running():
     """Show 'Running...'."""
     print()
     print(colored("{:.<10s}".format("Running"), "yellow"))
     print()
 
 
-def step_through_orgs(options, counts):
+def excelerate_orgs(options, counts):
     """Step through each org, making Excel file and logging results."""
     app_data = []
     orglist = options["orglist"]
@@ -125,7 +117,9 @@ def step_through_orgs(options, counts):
                    options["right_now"],
                    options["dirs"]["docs_dir"])
 
-    return log_results(results, app_data), counts
+        app_data.append(results)
+
+    return app_data, counts
 
 
 def get_org_invoices(options, orgname, counts):
@@ -173,11 +167,6 @@ def sanitize_results(results, prefs):
         item["posted_by"] = item["posted_by"].title()
 
     return results
-
-
-def log_results(results, app_data):
-    """Append each org's db results to a list of results."""
-    return app_data.append(results)
 
 
 def disconnect_from_db(conn, cursor):
