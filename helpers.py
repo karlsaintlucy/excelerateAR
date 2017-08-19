@@ -21,7 +21,7 @@ def get_preferences():
 def show_interface_header():
     """Clear the screen and show the interface header."""
     platform = sys.platform
-    os.system('cls' if platform == ('nt' or 'win32') else 'clear')
+    os.system('cls' if (platform == 'nt' or platform == 'win32') else 'clear')
     print(colored("{:=^79s}".format("excelerateAR for Idealist, "
                                     "v0.1 by Karl Johnson"), "white"))
 
