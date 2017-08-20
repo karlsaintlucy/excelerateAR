@@ -50,10 +50,10 @@ def make_dirs(options):
     if not os.path.isdir(reports_dir):
         os.mkdir(reports_dir)
 
-    user_name = user_info["name"]
+    user_name = user_info["name"].replace(" ", "_")
     folder_date_format = prefs["folder_date_format"]
 
-    data_dir_string = "{} {}".format(
+    data_dir_string = "{}_{}".format(
         right_now.strftime(folder_date_format), user_name)
     data_dir = os.path.join(reports_dir, data_dir_string)
     os.mkdir(data_dir)
