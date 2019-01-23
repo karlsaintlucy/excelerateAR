@@ -23,7 +23,7 @@ def show_interface_header():
     platform = sys.platform
     os.system('cls' if (platform == 'nt' or platform == 'win32') else 'clear')
     print(colored("{:=^79s}".format("excelerateAR for Idealist, "
-                                    "v0.1 by Karl Johnson"), "white"))
+                                    "v0.1 by Karl Saint Lucy"), "white"))
 
 
 def get_user_info():
