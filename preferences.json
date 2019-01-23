@@ -1,6 +1,6 @@
 {
     "excel_date_format": "%Y.%m.%d %I:%M:%S%p",
-    "folder_date_format": "%Y %m%d %H%M%S",
+    "folder_date_format": "%Y_%m%d_%H%M%S",
     "invoice_date_format": "%b %d, %Y",
     "keys": ["index",
         "invoice_num",

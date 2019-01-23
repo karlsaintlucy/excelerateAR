@@ -62,35 +62,40 @@ def make_excel(orgname, results, user_info, prefs, right_now, docs_dir):
         if item["invoice_num"] is None:
             continue
 
-        for key, value in item.items():
-            if key == "invoice_link" or key == "org_name":
-                continue
+        adjust_width(ws, item, prefs, col_widths, col)
+        ws.write_number(row, col, item["index"], file_formats["center"])
+        col += 1
 
-            width = len(str(value)) + 3
-            if width > col_widths[col]:
-                col_widths[col] = width
+        adjust_width(ws, item, prefs, col_widths, col)
+        ws.write_url(row, col, item["invoice_link"],
+                     file_formats["url"], str(item["invoice_num"]))
+        col += 1
 
-            if key == "invoice_num":
-                ws.write_url(row, col, item["invoice_link"],
-                             file_formats["url"], str(item["invoice_num"]))
+        adjust_width(ws, item, prefs, col_widths, col)
+        ws.write(row, col, item["description"], file_formats["text"])
+        col += 1
 
-            elif key == "index" or key == "days_overdue":
-                ws.write_number(row, col, value, file_formats["center"])
+        adjust_width(ws, item, prefs, col_widths, col)
+        ws.write(row, col, item["posted_by"], file_formats["text"])
+        col += 1
 
-            elif key == "amount_due":
-                ws.write_number(row, col, value, file_formats["money"])
+        adjust_width(ws, item, prefs, col_widths, col)
+        ws.write(row, col, item["posted_date"], file_formats["text"])
+        col += 1
 
-            else:
-                ws.write(row, col, str(value), file_formats["text"])
-            col += 1
+        adjust_width(ws, item, prefs, col_widths, col)
+        ws.write(row, col, item["due_date"], file_formats["text"]),
+        col += 1
+
+        adjust_width(ws, item, prefs, col_widths, col)
+        ws.write_number(row, col, item["days_overdue"], file_formats["center"])
+        col += 1
+
+        adjust_width(ws, item, prefs, col_widths, col)
+        ws.write_number(row, col, item["amount_due"], file_formats["money"])
 
         row += 1
         col = 0
-
-    col = 0
-    for width in col_widths:
-        ws.set_column(col, col, width)
-        col += 1
 
     ws.write(row, 6, "Total:", file_formats["bold"])
     sum_function = "=SUM(H4:H{})".format(row)
@@ -108,3 +113,10 @@ def make_excel(orgname, results, user_info, prefs, right_now, docs_dir):
 
     ws.hide_gridlines(2)
     wb.close()
+
+
+def adjust_width(ws, item, prefs, col_widths, col):
+    """Make the column wider if the content of each item is wider."""
+    this_col = prefs["keys"][col]
+    if len(str(item[this_col])) > col_widths[col]:
+        ws.set_column(col, col, len(str(item[this_col])) + 2)
